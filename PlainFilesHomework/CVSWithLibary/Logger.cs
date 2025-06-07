@@ -5,7 +5,7 @@ namespace CVSWithLibary;
 public static class Logger
 {
     private const string LogFilePath = "log.txt";
-    private static string? _currentUser = "UNAUTHENTICATED"; // Usuario por defecto para el log antes de iniciar sesión
+    private static string? _currentUser = "UNAUTHENTICATED"; // Usuario por defecto para el log antes de iniciar 
 
     public static void SetCurrentUser(string username)
     {
