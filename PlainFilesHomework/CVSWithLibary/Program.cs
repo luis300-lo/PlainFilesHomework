@@ -1,34 +1,29 @@
 ﻿using CVSWithLibary;
 using System.Text.RegularExpressions;
-using System.Globalization; // Asegúrate de que esta directiva esté presente para CultureInfo
+using System.Globalization;
+using System.Linq;
 
-// --- Lógica para CsvHelperExample y People (sin cambios significativos aquí) ---
 var helper = new CsvHelperExample();
 var readPeople = helper.Read("people.csv").ToList();
-// --- Fin Lógica People ---
 
-// --- Lógica para Users (Nueva) ---
 const string usersFilePath = "Users.txt";
-List<User> users = LoadUsers(usersFilePath); // Cargar usuarios al inicio
-// --- Fin Lógica Users ---
+List<User> users = LoadUsers(usersFilePath);
 
-// Registrar el inicio de la aplicación
-Logger.Log("Aplicación iniciada.");
+Logger.Log("Application started.");
 
-// --- Autenticación ---
 bool authenticated = false;
 int loginAttempts = 0;
 const int maxLoginAttempts = 3;
-User? currentUser = null; // Para almacenar el usuario que intenta iniciar sesión
+User? currentUser = null;
 
 while (!authenticated && loginAttempts < maxLoginAttempts)
 {
     Console.WriteLine("=======================================");
-    Console.WriteLine("Por favor, inicie sesión:");
-    Console.Write("Usuario: ");
+    Console.WriteLine("Please log in:");
+    Console.Write("Username: ");
     string? username = Console.ReadLine();
-    Console.Write("Contraseña: ");
-    string? password = ReadPassword(); // Función para leer contraseña sin mostrarla
+    Console.Write("Password: ");
+    string? password = ReadPassword();
 
     currentUser = users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
 
@@ -36,67 +31,61 @@ while (!authenticated && loginAttempts < maxLoginAttempts)
     {
         if (!currentUser.IsActive)
         {
-            Logger.Log($"Intento de inicio de sesión fallido para '{username}': Usuario bloqueado.");
-            Console.WriteLine("¡Error! Su usuario está bloqueado. Contacte al administrador.");
-            loginAttempts = maxLoginAttempts; // Forzar la salida del bucle
+            Logger.Log($"Login attempt failed for '{username}': User account locked.");
+            Console.WriteLine("Error! Your account is locked. Please contact the administrator.");
+            loginAttempts = maxLoginAttempts;
             break;
         }
 
-        if (currentUser.Password == password) // ¡ATENCIÓN! En prod real, usar hashing
+        if (currentUser.Password == password)
         {
             authenticated = true;
-            Logger.SetCurrentUser(currentUser.Username); // Establecer el usuario actual para el registro
-            Logger.Log($"Inicio de sesión exitoso para '{currentUser.Username}'.");
-            Console.WriteLine($"¡Bienvenido, {currentUser.Username}!");
+            Logger.SetCurrentUser(currentUser.Username);
+            Logger.Log($"Successful login for '{currentUser.Username}'.");
+            Console.WriteLine($"Welcome, {currentUser.Username}!");
             Console.WriteLine("=======================================");
         }
         else
         {
-            Logger.Log($"Intento de inicio de sesión fallido para '{username}': Contraseña incorrecta.");
-            Console.WriteLine("¡Error! Contraseña incorrecta.");
+            Logger.Log($"Login attempt failed for '{username}': Incorrect password.");
+            Console.WriteLine("Error! Incorrect password.");
             loginAttempts++;
         }
     }
     else
     {
-        Logger.Log($"Intento de inicio de sesión fallido para '{username ?? "NULL_USERNAME"}': Usuario no encontrado."); // Manejo de username nulo
-        Console.WriteLine("¡Error! Usuario no encontrado.");
+        Logger.Log($"Login attempt failed for '{username ?? "NULL_USERNAME"}': User not found.");
+        Console.WriteLine("Error! User not found.");
         loginAttempts++;
     }
 
     if (!authenticated && loginAttempts < maxLoginAttempts)
     {
-        Console.WriteLine($"Intentos restantes: {maxLoginAttempts - loginAttempts}");
+        Console.WriteLine($"Remaining attempts: {maxLoginAttempts - loginAttempts}");
     }
 }
 
 if (!authenticated)
 {
     Console.WriteLine("=======================================");
-    Console.WriteLine("Demasiados intentos fallidos. Saliendo del programa.");
-    if (currentUser != null && currentUser.IsActive) // Si el usuario existe y no estaba bloqueado, lo bloqueamos
+    Console.WriteLine("Too many failed attempts. Exiting program.");
+    if (currentUser != null && currentUser.IsActive)
     {
         currentUser.IsActive = false;
-        SaveUsers(usersFilePath, users); // Guardar el estado actualizado (bloqueado)
-        Logger.Log($"El usuario '{currentUser.Username}' ha sido bloqueado debido a múltiples intentos fallidos.");
-        Console.WriteLine($"El usuario '{currentUser.Username}' ha sido bloqueado.");
+        SaveUsers(usersFilePath, users);
+        Logger.Log($"User '{currentUser.Username}' has been locked due to multiple failed attempts.");
+        Console.WriteLine($"User '{currentUser.Username}' has been locked.");
     }
     else if (currentUser == null)
     {
-        // Esto cubre el caso donde se intentaron múltiples logins fallidos con un usuario NO EXISTENTE
-        Logger.Log("Programa terminado debido a múltiples intentos de inicio de sesión fallidos (usuario no encontrado).");
+        Logger.Log("Program terminated due to multiple failed login attempts (user not found).");
     }
-    // Registrar la salida del programa si la autenticación falla
-    Logger.Log("Aplicación terminada debido a fallos de autenticación.");
+    Logger.Log("Application terminated due to authentication failure.");
     Console.WriteLine("=======================================");
-    return; // Salir del programa si la autenticación falla
+    return;
 }
-// --- Fin Autenticación ---
 
-
-// --- Resto del programa (menú principal si la autenticación es exitosa) ---
-// Registrar el acceso al menú principal
-Logger.Log("Acceso al menú principal.");
+Logger.Log("Accessed main menu.");
 var opc = "0";
 do
 {
@@ -105,7 +94,7 @@ do
     switch (opc)
     {
         case "1":
-            Logger.Log("El usuario ha seleccionado 'Mostrar contenido de Personas'.");
+            Logger.Log("User selected 'Display People Data'.");
             foreach (var person in readPeople)
             {
                 Console.WriteLine(person);
@@ -113,8 +102,7 @@ do
             break;
 
         case "2":
-
-            Logger.Log("El usuario ha seleccionado 'Añadir Persona'. Iniciando validaciones.");
+            Logger.Log("User selected 'Add Person'. Starting validations.");
 
             int newId;
             bool idIsValid = false;
@@ -126,13 +114,13 @@ do
                 {
                     if (readPeople.Any(p => p.Id == newId))
                     {
-                        Console.WriteLine("¡Error! Este ID ya existe. Por favor, ingrese un ID único.");
-                        Logger.Log($"Error al añadir persona: ID '{idInput}' ya existe.");
+                        Console.WriteLine("Error! This ID already exists. Please enter a unique ID.");
+                        Logger.Log($"Error adding person: ID '{idInput}' already exists.");
                     }
-                    else if (newId < 0) // Puedes añadir esta validación si los IDs deben ser positivos
+                    else if (newId < 0)
                     {
-                        Console.WriteLine("¡Error! El ID debe ser un número positivo.");
-                        Logger.Log($"Error al añadir persona: ID '{idInput}' no es positivo.");
+                        Console.WriteLine("Error! The ID must be a positive number.");
+                        Logger.Log($"Error adding person: ID '{idInput}' is not positive.");
                     }
                     else
                     {
@@ -141,8 +129,8 @@ do
                 }
                 else
                 {
-                    Console.WriteLine("¡Error! El ID debe ser un número válido.");
-                    Logger.Log($"Error al añadir persona: ID '{idInput}' no es un número.");
+                    Console.WriteLine("Error! The ID must be a valid number.");
+                    Logger.Log($"Error adding person: ID '{idInput}' is not a number.");
                 }
             } while (!idIsValid);
 
@@ -150,12 +138,12 @@ do
             bool firstNameIsValid = false;
             do
             {
-                Console.Write("Enter the First name: ");
+                Console.Write("Enter the First Name: ");
                 firstName = Console.ReadLine() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(firstName))
                 {
-                    Console.WriteLine("¡Error! El nombre no puede estar vacío.");
-                    Logger.Log("Error al añadir persona: Nombre vacío.");
+                    Console.WriteLine("Error! First name cannot be empty.");
+                    Logger.Log("Error adding person: First name is empty.");
                 }
                 else
                 {
@@ -167,12 +155,12 @@ do
             bool lastNameIsValid = false;
             do
             {
-                Console.Write("Enter the Last name: ");
+                Console.Write("Enter the Last Name: ");
                 lastName = Console.ReadLine() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(lastName))
                 {
-                    Console.WriteLine("¡Error! El apellido no puede estar vacío.");
-                    Logger.Log("Error al añadir persona: Apellido vacío.");
+                    Console.WriteLine("Error! Last name cannot be empty.");
+                    Logger.Log("Error adding person: Last name is empty.");
                 }
                 else
                 {
@@ -184,13 +172,12 @@ do
             bool phoneIsValid = false;
             do
             {
-                Console.Write("Enter the phone (digits only, e.g., 1234567890): ");
+                Console.Write("Enter the Phone (digits only, e.g., 1234567890): ");
                 phone = Console.ReadLine() ?? string.Empty;
-                // Validación de teléfono: solo dígitos y no vacío
                 if (string.IsNullOrWhiteSpace(phone) || !Regex.IsMatch(phone, @"^\d+$"))
                 {
-                    Console.WriteLine("¡Error! El teléfono debe contener solo dígitos y no puede estar vacío.");
-                    Logger.Log($"Error al añadir persona: Teléfono '{phone}' inválido.");
+                    Console.WriteLine("Error! Phone must contain only digits and cannot be empty.");
+                    Logger.Log($"Error adding person: Phone '{phone}' is invalid.");
                 }
                 else
                 {
@@ -198,24 +185,22 @@ do
                 }
             } while (!phoneIsValid);
 
-            string city = string.Empty; // La ciudad no tenía validación específica en tu lista, pero la dejamos para entrada.
-            Console.Write("Enter the city: ");
+            string city = string.Empty;
+            Console.Write("Enter the City: ");
             city = Console.ReadLine() ?? string.Empty;
-            // No hay validación para la ciudad en los requisitos, así que se acepta cualquier entrada.
 
             decimal newBalance;
             bool balanceIsValid = false;
             do
             {
-                Console.Write("Enter the balance (must be a positive number or zero): ");
+                Console.Write("Enter the Balance (must be a positive number or zero): ");
                 var balanceInput = Console.ReadLine();
-                // Usamos CultureInfo.InvariantCulture para asegurar que el punto sea el separador decimal (ej. 123.45)
                 if (decimal.TryParse(balanceInput, NumberStyles.Currency | NumberStyles.Number, CultureInfo.InvariantCulture, out newBalance))
                 {
                     if (newBalance < 0)
                     {
-                        Console.WriteLine("¡Error! El saldo no puede ser negativo.");
-                        Logger.Log($"Error al añadir persona: Saldo '{balanceInput}' negativo.");
+                        Console.WriteLine("Error! Balance cannot be negative.");
+                        Logger.Log($"Error adding person: Balance '{balanceInput}' is negative.");
                     }
                     else
                     {
@@ -224,8 +209,8 @@ do
                 }
                 else
                 {
-                    Console.WriteLine("¡Error! El saldo debe ser un número válido.");
-                    Logger.Log($"Error al añadir persona: Saldo '{balanceInput}' no es un número.");
+                    Console.WriteLine("Error! Balance must be a valid number.");
+                    Logger.Log($"Error adding person: Balance '{balanceInput}' is not a number.");
                 }
             } while (!balanceIsValid);
 
@@ -240,228 +225,221 @@ do
             };
 
             readPeople.Add(newPerson);
-            Logger.Log($"Persona añadida exitosamente: ID={newPerson.Id}, Nombre='{newPerson.FirstName} {newPerson.LastName}'.");
-            Console.WriteLine("Persona añadida exitosamente.");
+            Logger.Log($"Person added successfully: ID={newPerson.Id}, Name='{newPerson.FirstName} {newPerson.LastName}'.");
+            Console.WriteLine("Person added successfully.");
             break;
 
         case "3":
-            Logger.Log("El usuario ha seleccionado 'Guardar cambios de Personas'.");
+            Logger.Log("User selected 'Save People Changes'.");
             SaveChanges();
             break;
 
         case "4":
-            Logger.Log("El usuario ha seleccionado 'Editar Persona'.");
-            Console.Write("Ingrese el ID de la persona a editar: ");
+            Logger.Log("User selected 'Edit Person'.");
+            Console.Write("Enter the ID of the person to edit: ");
             string? idToEditInput = Console.ReadLine();
             int idToEdit;
 
             if (!int.TryParse(idToEditInput, out idToEdit))
             {
-                Console.WriteLine("¡Error! El ID debe ser un número válido.");
-                Logger.Log($"Error al editar persona: ID '{idToEditInput}' no es un número.");
-                break; // Sale del case 4
+                Console.WriteLine("Error! The ID must be a valid number.");
+                Logger.Log($"Error editing person: ID '{idToEditInput}' is not a number.");
+                break;
             }
 
             Person? personToEdit = readPeople.FirstOrDefault(p => p.Id == idToEdit);
 
             if (personToEdit == null)
             {
-                Console.WriteLine($"¡Error! No se encontró una persona con el ID '{idToEdit}'.");
-                Logger.Log($"Error al editar persona: No se encontró el ID '{idToEdit}'.");
-                break; // Sale del case 4
+                Console.WriteLine($"Error! No person found with ID '{idToEdit}'.");
+                Logger.Log($"Error editing person: No person found with ID '{idToEdit}'.");
+                break;
             }
 
-            Console.WriteLine("\n--- Editando Persona (Presione ENTER para mantener el valor actual) ---");
-            Console.WriteLine($"ID actual: {personToEdit.Id}");
-            Logger.Log($"Editando persona con ID: {personToEdit.Id}");
+            Console.WriteLine("\n--- Editing Person (Press ENTER to keep current value) ---");
+            Console.WriteLine($"Current ID: {personToEdit.Id}");
+            Logger.Log($"Editing person with ID: {personToEdit.Id}");
 
-            // Editar Nombre
-            Console.Write($"Nombre actual: {personToEdit.FirstName}. Nuevo nombre: ");
+            Console.Write($"Current First Name: {personToEdit.FirstName}. New First Name: ");
             string? newFirstNameInput = Console.ReadLine();
-            if (!string.IsNullOrEmpty(newFirstNameInput)) // Si no se presionó ENTER vacío
+            if (!string.IsNullOrEmpty(newFirstNameInput))
             {
                 if (string.IsNullOrWhiteSpace(newFirstNameInput))
                 {
-                    Console.WriteLine("¡Error! El nombre no puede ser solo espacios. Se mantiene el valor anterior.");
-                    Logger.Log($"Error al editar persona (nombre): '{newFirstNameInput}' es solo espacios. Se mantiene '{personToEdit.FirstName}'.");
+                    Console.WriteLine("Error! First name cannot be just spaces. Keeping previous value.");
+                    Logger.Log($"Error editing person (first name): '{newFirstNameInput}' is just spaces. Keeping '{personToEdit.FirstName}'.");
                 }
                 else
                 {
                     personToEdit.FirstName = newFirstNameInput;
-                    Logger.Log($"Nombre de ID {personToEdit.Id} actualizado a '{personToEdit.FirstName}'.");
+                    Logger.Log($"First Name of ID {personToEdit.Id} updated to '{personToEdit.FirstName}'.");
                 }
             }
 
-            // Editar Apellido
-            Console.Write($"Apellido actual: {personToEdit.LastName}. Nuevo apellido: ");
+            Console.Write($"Current Last Name: {personToEdit.LastName}. New Last Name: ");
             string? newLastNameInput = Console.ReadLine();
             if (!string.IsNullOrEmpty(newLastNameInput))
             {
                 if (string.IsNullOrWhiteSpace(newLastNameInput))
                 {
-                    Console.WriteLine("¡Error! El apellido no puede ser solo espacios. Se mantiene el valor anterior.");
-                    Logger.Log($"Error al editar persona (apellido): '{newLastNameInput}' es solo espacios. Se mantiene '{personToEdit.LastName}'.");
+                    Console.WriteLine("Error! Last name cannot be just spaces. Keeping previous value.");
+                    Logger.Log($"Error editing person (last name): '{newLastNameInput}' is just spaces. Keeping '{personToEdit.LastName}'.");
                 }
                 else
                 {
                     personToEdit.LastName = newLastNameInput;
-                    Logger.Log($"Apellido de ID {personToEdit.Id} actualizado a '{personToEdit.LastName}'.");
+                    Logger.Log($"Last Name of ID {personToEdit.Id} updated to '{personToEdit.LastName}'.");
                 }
             }
 
-            // Editar Teléfono
             string? newPhoneInput = string.Empty;
             bool phoneEditIsValid = false;
             do
             {
-                Console.Write($"Teléfono actual: {personToEdit.Phone}. Nuevo teléfono (solo dígitos): ");
+                Console.Write($"Current Phone: {personToEdit.Phone}. New Phone (digits only): ");
                 newPhoneInput = Console.ReadLine() ?? string.Empty;
 
-                if (string.IsNullOrEmpty(newPhoneInput)) // Si es ENTER vacío, mantiene el valor
+                if (string.IsNullOrEmpty(newPhoneInput))
                 {
-                    phoneEditIsValid = true; // El valor anterior es válido
+                    phoneEditIsValid = true;
                 }
-                else // Si se ingresó algo, validar
+                else
                 {
                     if (!Regex.IsMatch(newPhoneInput, @"^\d+$"))
                     {
-                        Console.WriteLine("¡Error! El teléfono debe contener solo dígitos.");
-                        Logger.Log($"Error al editar persona (teléfono): '{newPhoneInput}' inválido. Se mantiene '{personToEdit.Phone}'.");
+                        Console.WriteLine("Error! Phone must contain only digits.");
+                        Logger.Log($"Error editing person (phone): '{newPhoneInput}' is invalid. Keeping '{personToEdit.Phone}'.");
                     }
                     else
                     {
                         personToEdit.Phone = newPhoneInput;
                         phoneEditIsValid = true;
-                        Logger.Log($"Teléfono de ID {personToEdit.Id} actualizado a '{personToEdit.Phone}'.");
+                        Logger.Log($"Phone of ID {personToEdit.Id} updated to '{personToEdit.Phone}'.");
                     }
                 }
             } while (!phoneEditIsValid);
 
-            // Editar Ciudad (sin validación específica, solo mantener si es vacío)
-            Console.Write($"Ciudad actual: {personToEdit.City}. Nueva ciudad: ");
+            Console.Write($"Current City: {personToEdit.City}. New City: ");
             string? newCityInput = Console.ReadLine();
             if (!string.IsNullOrEmpty(newCityInput))
             {
                 personToEdit.City = newCityInput;
-                Logger.Log($"Ciudad de ID {personToEdit.Id} actualizada a '{personToEdit.City}'.");
+                Logger.Log($"City of ID {personToEdit.Id} updated to '{personToEdit.City}'.");
             }
 
-            // Editar Balance
             string? newBalanceInput = string.Empty;
             decimal newBalanceEdit;
             bool balanceEditIsValid = false;
             do
             {
-                Console.Write($"Saldo actual: {personToEdit.Balance:C2}. Nuevo saldo (número positivo o cero): ");
+                Console.Write($"Current Balance: {personToEdit.Balance:C2}. New Balance (positive number or zero): ");
                 newBalanceInput = Console.ReadLine() ?? string.Empty;
 
-                if (string.IsNullOrEmpty(newBalanceInput)) // Si es ENTER vacío, mantiene el valor
+                if (string.IsNullOrEmpty(newBalanceInput))
                 {
-                    balanceEditIsValid = true; // El valor anterior es válido
+                    balanceEditIsValid = true;
                 }
-                else // Si se ingresó algo, validar
+                else
                 {
                     if (decimal.TryParse(newBalanceInput, NumberStyles.Currency | NumberStyles.Number, CultureInfo.InvariantCulture, out newBalanceEdit))
                     {
                         if (newBalanceEdit < 0)
                         {
-                            Console.WriteLine("¡Error! El saldo no puede ser negativo. Se mantiene el valor anterior.");
-                            Logger.Log($"Error al editar persona (saldo): '{newBalanceInput}' negativo. Se mantiene '{personToEdit.Balance}'.");
+                            Console.WriteLine("Error! Balance cannot be negative. Keeping previous value.");
+                            Logger.Log($"Error editing person (balance): '{newBalanceInput}' is negative. Keeping '{personToEdit.Balance}'.");
                         }
                         else
                         {
                             personToEdit.Balance = newBalanceEdit;
                             balanceEditIsValid = true;
-                            Logger.Log($"Saldo de ID {personToEdit.Id} actualizado a '{personToEdit.Balance}'.");
+                            Logger.Log($"Balance of ID {personToEdit.Id} updated to '{personToEdit.Balance}'.");
                         }
                     }
                     else
                     {
-                        Console.WriteLine("¡Error! El saldo debe ser un número válido. Se mantiene el valor anterior.");
-                        Logger.Log($"Error al editar persona (saldo): '{newBalanceInput}' no es un número. Se mantiene '{personToEdit.Balance}'.");
+                        Console.WriteLine("Error! Balance must be a valid number. Keeping previous value.");
+                        Logger.Log($"Error editing person (balance): '{newBalanceInput}' is not a number. Keeping '{personToEdit.Balance}'.");
                     }
                 }
             } while (!balanceEditIsValid);
 
-            Console.WriteLine($"Persona con ID {personToEdit.Id} actualizada correctamente.");
-            Logger.Log($"Persona con ID {personToEdit.Id} actualizada correctamente.");
+            Console.WriteLine($"Person with ID {personToEdit.Id} updated successfully.");
+            Logger.Log($"Person with ID {personToEdit.Id} updated successfully.");
             break;
 
         case "5":
-            Logger.Log("El usuario ha seleccionado 'Eliminar Persona'.");
-            Console.Write("Ingrese el ID de la persona a eliminar: ");
+            Logger.Log("User selected 'Delete Person'.");
+            Console.Write("Enter the ID of the person to delete: ");
             string? idToDeleteInput = Console.ReadLine();
             int idToDelete;
 
             if (!int.TryParse(idToDeleteInput, out idToDelete))
             {
-                Console.WriteLine("¡Error! El ID debe ser un número válido.");
-                Logger.Log($"Error al eliminar persona: ID '{idToDeleteInput}' no es un número.");
-                break; // Sale del case 5
+                Console.WriteLine("Error! The ID must be a valid number.");
+                Logger.Log($"Error deleting person: ID '{idToDeleteInput}' is not a number.");
+                break;
             }
 
             Person? personToDelete = readPeople.FirstOrDefault(p => p.Id == idToDelete);
 
             if (personToDelete == null)
             {
-                Console.WriteLine($"¡Error! No se encontró una persona con el ID '{idToDelete}'.");
-                Logger.Log($"Error al eliminar persona: No se encontró el ID '{idToDelete}'.");
-                break; // Sale del case 5
+                Console.WriteLine($"Error! No person found with ID '{idToDelete}'.");
+                Logger.Log($"Error deleting person: No person found with ID '{idToDelete}'.");
+                break;
             }
 
-            // Mostrar datos de la persona encontrada
-            Console.WriteLine("\n--- Persona Encontrada ---");
+            Console.WriteLine("\n--- Person Found ---");
             Console.WriteLine($"ID: {personToDelete.Id}");
-            Console.WriteLine($"Nombre: {personToDelete.FirstName} {personToDelete.LastName}");
-            Console.WriteLine($"Teléfono: {personToDelete.Phone}");
-            Console.WriteLine($"Ciudad: {personToDelete.City}");
-            Console.WriteLine($"Saldo: {personToDelete.Balance:C2}"); // Formato de moneda
+            Console.WriteLine($"First Name: {personToDelete.FirstName}");
+            Console.WriteLine($"Last Name: {personToDelete.LastName}");
+            Console.WriteLine($"Phone: {personToDelete.Phone}");
+            Console.WriteLine($"City: {personToDelete.City}");
+            Console.WriteLine($"Balance: {personToDelete.Balance:C2}");
             Console.WriteLine("--------------------------");
 
-            // Pedir confirmación
-            Console.Write($"¿Está seguro que desea eliminar a '{personToDelete.FirstName} {personToDelete.LastName}' (ID: {personToDelete.Id})? (S/N): ");
+            Console.Write($"Are you sure you want to delete '{personToDelete.FirstName} {personToDelete.LastName}' (ID: {personToDelete.Id})? (Y/N): ");
             string? confirmation = Console.ReadLine()?.Trim().ToUpper();
 
-            if (confirmation == "S")
+            if (confirmation == "Y")
             {
                 readPeople.Remove(personToDelete);
-                Console.WriteLine($"Persona con ID {personToDelete.Id} eliminada correctamente.");
-                Logger.Log($"Persona eliminada correctamente: ID={personToDelete.Id}, Nombre='{personToDelete.FirstName} {personToDelete.LastName}'.");
+                Console.WriteLine($"Person with ID {personToDelete.Id} deleted successfully.");
+                Logger.Log($"Person deleted successfully: ID={personToDelete.Id}, Name='{personToDelete.FirstName} {personToDelete.LastName}'.");
             }
             else
             {
-                Console.WriteLine("Operación de eliminación cancelada.");
-                Logger.Log($"Eliminación de persona con ID {personToDelete.Id} cancelada.");
+                Console.WriteLine("Deletion operation cancelled.");
+                Logger.Log($"Deletion of person with ID {personToDelete.Id} cancelled.");
             }
             break;
 
         case "6":
-            Logger.Log("El usuario ha seleccionado 'Mostrar informe con subtotales por Ciudad'.");
-            Console.WriteLine("\n--- INFORME DE SALDOS POR CIUDAD ---");
+            Logger.Log("User selected 'Display City Balance Report'.");
+            Console.WriteLine("\n--- CITY BALANCE REPORT ---");
             Console.WriteLine("=======================================");
 
-            // Agrupar personas por ciudad
             var peopleByCity = readPeople
                                 .GroupBy(p => p.City)
-                                .OrderBy(g => g.Key); // Ordenar por nombre de ciudad
+                                .OrderBy(g => g.Key);
 
             decimal grandTotalBalance = 0m;
 
             if (!readPeople.Any())
             {
-                Console.WriteLine("No hay personas registradas para generar el informe.");
-                Logger.Log("Informe generado: No hay personas registradas.");
+                Console.WriteLine("No people registered to generate the report.");
+                Logger.Log("Report generated: No people registered.");
             }
             else
             {
                 foreach (var cityGroup in peopleByCity)
                 {
-                    Console.WriteLine($"\nCiudad: {cityGroup.Key}");
-                    Console.WriteLine("ID\tNombres\t\tApellidos\tSaldo");
-                    Console.WriteLine("—\t———————\t\t———————\t\t———————");
+                    Console.WriteLine($"\nCity: {cityGroup.Key}");
+                    Console.WriteLine("ID\tFirst Name\tLast Name\tBalance");
+                    Console.WriteLine("--\t-----------\t-----------\t-----------");
 
                     decimal cityTotalBalance = 0m;
-                    foreach (var person in cityGroup.OrderBy(p => p.LastName).ThenBy(p => p.FirstName)) // Ordenar personas dentro de cada ciudad
+                    foreach (var person in cityGroup.OrderBy(p => p.LastName).ThenBy(p => p.FirstName))
                     {
                         Console.WriteLine($"{person.Id}\t{person.FirstName,-15}\t{person.LastName,-15}\t{person.Balance,10:C2}");
                         cityTotalBalance += person.Balance;
@@ -472,46 +450,42 @@ do
                 }
 
                 Console.WriteLine("\n\t\t\t\t\t=======");
-                Console.WriteLine($"Total General:\t\t\t\t{grandTotalBalance,10:C2}");
+                Console.WriteLine($"Grand Total:\t\t\t\t{grandTotalBalance,10:C2}");
                 Console.WriteLine("=======================================");
-                Logger.Log($"Informe de saldos por ciudad generado. Total General: {grandTotalBalance:C2}");
+                Logger.Log($"City balance report generated. Grand Total: {grandTotalBalance:C2}");
             }
             break;
 
         case "0":
-            Logger.Log("El usuario ha seleccionado 'Salir' del menú principal.");
-            break; // No hay un break después de llamar a SaveChanges() al final del do-while
+            Logger.Log("User selected 'Exit' from main menu.");
+            break;
     }
 } while (opc != "0");
-SaveChanges(); // Guardar cambios al salir del menú principal (esto también se registra)
+SaveChanges();
 
-// Registrar la salida final de la aplicación
-Logger.Log("Aplicación terminada.");
-
-// --- Funciones Locales (sin cambios significativos en su lógica, solo añade logs) ---
+Logger.Log("Application terminated.");
 
 void SaveChanges()
 {
     helper.Write("people.csv", readPeople);
-    Console.WriteLine("Cambios de personas guardados en people.csv.");
-    Logger.Log("Cambios de personas guardados en 'people.csv'.");
+    Console.WriteLine("People data saved to people.csv.");
+    Logger.Log("People data saved to 'people.csv'.");
 }
 
 string Menu()
 {
     Console.WriteLine("=======================================");
-    Console.WriteLine("1. Mostrar contenido de Personas");
-    Console.WriteLine("2. Añadir Persona");
-    Console.WriteLine("3. Guardar cambios de Personas");
-    Console.WriteLine("4. Editar Persona");
-    Console.WriteLine("5. Eliminar Persona");
-    Console.WriteLine("6. Mostrar Informe por Ciudad"); // <-- NUEVA OPCIÓN
-    Console.WriteLine("0. Salir");
-    Console.Write("Elija una opción: ");
+    Console.WriteLine("1. Show content");
+    Console.WriteLine("2. Add Person");
+    Console.WriteLine("3. Save Changes");
+    Console.WriteLine("4. Edit Person");
+    Console.WriteLine("5. Delete Person");
+    Console.WriteLine("6. Display City Balance Report");
+    Console.WriteLine("0. Exit");
+    Console.Write("Choose an option: ");
     return Console.ReadLine() ?? "0";
 }
 
-// Función para leer usuarios del archivo
 List<User> LoadUsers(string filePath)
 {
     List<User> userList = new List<User>();
@@ -531,47 +505,44 @@ List<User> LoadUsers(string filePath)
                 });
             }
         }
-        Logger.Log($"Usuarios cargados desde '{filePath}'.");
+        Logger.Log($"Users loaded from '{filePath}'.");
     }
     else
     {
-        Logger.Log($"Advertencia: El archivo de usuarios '{filePath}' no se encontró. Cree uno manualmente.");
-        Console.WriteLine($"Advertencia: El archivo de usuarios '{filePath}' no se encontró. Cree uno manualmente.");
+        Logger.Log($"Warning: User file '{filePath}' not found. Create one manually.");
+        Console.WriteLine($"Warning: User file '{filePath}' not found. Create one manually.");
     }
     return userList;
 }
 
-// Función para guardar usuarios en el archivo
 void SaveUsers(string filePath, List<User> userList)
 {
     var lines = userList.Select(u => u.ToString()).ToArray();
     File.WriteAllLines(filePath, lines);
-    Console.WriteLine("Cambios de usuarios guardados en Users.txt.");
-    Logger.Log($"Cambios de usuarios guardados en '{filePath}'.");
+    Console.WriteLine("User changes saved to Users.txt.");
+    Logger.Log($"User changes saved to '{filePath}'.");
 }
 
-// Función para leer la contraseña sin mostrarla en consola
 string ReadPassword()
 {
     string password = "";
     ConsoleKeyInfo key;
     do
     {
-        key = Console.ReadKey(true); // Lee la tecla sin mostrarla
+        key = Console.ReadKey(true);
 
-        // Ignora teclas de control como Shift, Alt, Ctrl
         if (char.IsLetterOrDigit(key.KeyChar) || char.IsPunctuation(key.KeyChar) || char.IsSymbol(key.KeyChar))
         {
             password += key.KeyChar;
-            Console.Write("*"); // Muestra un asterisco por cada carácter
+            Console.Write("*");
         }
         else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
         {
             password = password.Substring(0, password.Length - 1);
-            Console.Write("\b \b"); // Borra el asterisco anterior
+            Console.Write("\b \b");
         }
-    } while (key.Key != ConsoleKey.Enter); // Termina al presionar Enter
+    } while (key.Key != ConsoleKey.Enter);
 
-    Console.WriteLine(); // Nueva línea después de la contraseñaww
+    Console.WriteLine();
     return password;
 }
